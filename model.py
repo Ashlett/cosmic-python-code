@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import date
 
 
 class AllocationError(Exception):
@@ -13,12 +14,16 @@ class OrderLine:
 
 
 class Batch:
-    def __init__(self, reference: str, stock_keeping_unit: str, available_quantity: int):
+    def __init__(self, reference: str, stock_keeping_unit: str, available_quantity: int, eta: date | None = None):
+        if not reference:
+            raise ValueError("Batch reference cannot be empty")
+
         self.reference = reference
         self.stock_keeping_unit = stock_keeping_unit
         self.available_quantity = available_quantity
+        self.eta = eta
 
-    def allocate(self, order_line:OrderLine):
+    def allocate(self, order_line: OrderLine):
         if order_line.batch_reference:
             if order_line.batch_reference == self.reference:
                 return
@@ -33,3 +38,22 @@ class Batch:
 
         self.available_quantity -= order_line.quantity
         order_line.batch_reference = self.reference
+
+    def deallocate(self, order_line: OrderLine):
+        if order_line.batch_reference == self.reference:
+            self.available_quantity += order_line.quantity
+            order_line.batch_reference = ""
+
+
+def allocate(order_line: OrderLine, batches: list[Batch]):
+    batches_in_stock = [batch for batch in batches if batch.eta is None]
+
+    if batches_in_stock:
+        selected_batch = batches_in_stock[0]
+        selected_batch.allocate(order_line)
+
+    else:
+        batches_in_transit = [batch for batch in batches if batch.eta is not None]
+        batches_in_transit.sort(key=lambda batch: batch.eta)
+        selected_batch = batches_in_transit[0]
+        selected_batch.allocate(order_line)

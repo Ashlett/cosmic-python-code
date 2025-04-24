@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 import pytest
 
-from model import AllocationError, Batch, OrderLine
+from model import allocate, AllocationError, Batch, OrderLine
 
 today = date.today()
 tomorrow = today + timedelta(days=1)
@@ -54,9 +54,33 @@ def test_allocation_idempotent():
     assert batch.available_quantity == 8
 
 
+def test_can_only_deallocate_allocated_lines():
+    batch, unallocated_line = make_batch_and_line("DECORATIVE-TRINKET", 20, 2)
+    batch.deallocate(unallocated_line)
+    assert batch.available_quantity == 20
+
+
 def test_prefers_warehouse_batches_to_shipments():
-    pytest.fail("todo")
+    warehouse_batch = Batch(reference="warehouse", stock_keeping_unit="RETRO-CLOCK", available_quantity=100, eta=None)
+    ships_tomorrow = Batch(reference="shipment", stock_keeping_unit="RETRO-CLOCK", available_quantity=100, eta=tomorrow)
+    order_line = OrderLine(stock_keeping_unit="RETRO-CLOCK", quantity=10)
+
+    allocate(order_line, [warehouse_batch, ships_tomorrow])
+
+    assert warehouse_batch.available_quantity == 90
+    assert ships_tomorrow.available_quantity == 100
+    assert order_line.batch_reference == "warehouse"
 
 
 def test_prefers_earlier_batches():
-    pytest.fail("todo")
+    earliest = Batch(reference="batch1", stock_keeping_unit="MINIMALIST-SPOON", available_quantity=50, eta=today)
+    medium = Batch(reference="batch2", stock_keeping_unit="MINIMALIST-SPOON", available_quantity=50, eta=tomorrow)
+    latest = Batch(reference="batch3", stock_keeping_unit="MINIMALIST-SPOON", available_quantity=50, eta=later)
+    order_line = OrderLine(stock_keeping_unit="MINIMALIST-SPOON", quantity=10)
+
+    allocate(order_line, [medium, latest, earliest])
+
+    assert earliest.available_quantity == 40
+    assert medium.available_quantity == 50
+    assert latest.available_quantity == 50
+    assert order_line.batch_reference == "batch1"
