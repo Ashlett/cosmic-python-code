@@ -84,3 +84,19 @@ def test_prefers_earlier_batches():
     assert medium.available_quantity == 50
     assert latest.available_quantity == 50
     assert order_line.batch_reference == "batch1"
+
+
+def test_skips_out_of_stock_batches():
+    warehouse_batch = Batch(reference="warehouse", stock_keeping_unit="MINIMALIST-SPOON", available_quantity=1, eta=None)
+    earliest = Batch(reference="shipment1", stock_keeping_unit="MINIMALIST-SPOON", available_quantity=2, eta=today)
+    medium = Batch(reference="shipment2", stock_keeping_unit="MINIMALIST-SPOON", available_quantity=3, eta=tomorrow)
+    latest = Batch(reference="shipment3", stock_keeping_unit="MINIMALIST-SPOON", available_quantity=50, eta=later)
+    order_line = OrderLine(stock_keeping_unit="MINIMALIST-SPOON", quantity=10)
+
+    allocate(order_line, [medium, latest, earliest, warehouse_batch])
+
+    assert warehouse_batch.available_quantity == 1
+    assert earliest.available_quantity == 2
+    assert medium.available_quantity == 3
+    assert latest.available_quantity == 40
+    assert order_line.batch_reference == "shipment3"

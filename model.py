@@ -23,6 +23,13 @@ class Batch:
         self.available_quantity = available_quantity
         self.eta = eta
 
+    def __gt__(self, other):
+        if self.eta is None:
+            return False
+        if other.eta is None:
+            return True
+        return self.eta > other.eta
+
     def allocate(self, order_line: OrderLine):
         if order_line.batch_reference:
             if order_line.batch_reference == self.reference:
@@ -46,14 +53,9 @@ class Batch:
 
 
 def allocate(order_line: OrderLine, batches: list[Batch]):
-    batches_in_stock = [batch for batch in batches if batch.eta is None]
-
-    if batches_in_stock:
-        selected_batch = batches_in_stock[0]
-        selected_batch.allocate(order_line)
-
-    else:
-        batches_in_transit = [batch for batch in batches if batch.eta is not None]
-        batches_in_transit.sort(key=lambda batch: batch.eta)
-        selected_batch = batches_in_transit[0]
-        selected_batch.allocate(order_line)
+    for batch in sorted(batches):
+        try:
+            batch.allocate(order_line)
+            return
+        except AllocationError:
+            continue
