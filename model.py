@@ -59,3 +59,4 @@ def allocate(order_line: OrderLine, batches: list[Batch]):
             return
         except AllocationError:
             continue
+    raise AllocationError(f"no batch found containing {order_line.quantity} of {order_line.stock_keeping_unit}")
