@@ -8,18 +8,18 @@ class AllocationError(Exception):
 
 @dataclass
 class OrderLine:
-    stock_keeping_unit: str
+    sku: str
     quantity: int
     batch_reference: str = ""
 
 
 class Batch:
-    def __init__(self, reference: str, stock_keeping_unit: str, available_quantity: int, eta: date | None = None):
+    def __init__(self, reference: str, sku: str, available_quantity: int, eta: date | None = None):
         if not reference:
             raise ValueError("Batch reference cannot be empty")
 
         self.reference = reference
-        self.stock_keeping_unit = stock_keeping_unit
+        self.sku = sku
         self.available_quantity = available_quantity
         self.eta = eta
 
@@ -37,7 +37,7 @@ class Batch:
             else:
                 raise AllocationError("order line already allocated to a different batch")
 
-        if order_line.stock_keeping_unit != self.stock_keeping_unit:
+        if order_line.sku != self.sku:
             raise AllocationError("different product between batch and order line")
 
         if order_line.quantity > self.available_quantity:
@@ -59,4 +59,4 @@ def allocate(order_line: OrderLine, batches: list[Batch]):
             return
         except AllocationError:
             continue
-    raise AllocationError(f"no batch found containing {order_line.quantity} of {order_line.stock_keeping_unit}")
+    raise AllocationError(f"no batch found containing {order_line.quantity} of {order_line.sku}")

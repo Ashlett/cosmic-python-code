@@ -8,9 +8,9 @@ tomorrow = today + timedelta(days=1)
 later = tomorrow + timedelta(days=10)
 
 
-def make_batch_and_line(stock_keeping_unit, batch_quantity, line_quantity):
-    batch = Batch(reference="test", stock_keeping_unit=stock_keeping_unit, available_quantity=batch_quantity)
-    order_line = OrderLine(stock_keeping_unit=stock_keeping_unit, quantity=line_quantity)
+def make_batch_and_line(sku, batch_quantity, line_quantity):
+    batch = Batch(reference="test", sku=sku, available_quantity=batch_quantity)
+    order_line = OrderLine(sku=sku, quantity=line_quantity)
     return batch, order_line
 
 
@@ -38,9 +38,9 @@ def test_can_allocate_if_available_equal_to_required():
     assert batch.available_quantity == 0
 
 
-def test_cannot_allocate_if_products_do_not_match():
-    batch = Batch(reference="test", stock_keeping_unit="UNCOMFORTABLE-CHAIR", available_quantity=100)
-    different_sku_line = OrderLine(stock_keeping_unit="EXPENSIVE-TOASTER", quantity=10)
+def test_cannot_allocate_if_skus_do_not_match():
+    batch = Batch(reference="test", sku="UNCOMFORTABLE-CHAIR", available_quantity=100)
+    different_sku_line = OrderLine(sku="EXPENSIVE-TOASTER", quantity=10)
     with pytest.raises(AllocationError):
         batch.allocate(different_sku_line)
 
@@ -61,9 +61,9 @@ def test_can_only_deallocate_allocated_lines():
 
 
 def test_prefers_warehouse_batches_to_shipments():
-    warehouse_batch = Batch(reference="warehouse", stock_keeping_unit="RETRO-CLOCK", available_quantity=100, eta=None)
-    ships_tomorrow = Batch(reference="shipment", stock_keeping_unit="RETRO-CLOCK", available_quantity=100, eta=tomorrow)
-    order_line = OrderLine(stock_keeping_unit="RETRO-CLOCK", quantity=10)
+    warehouse_batch = Batch(reference="warehouse", sku="RETRO-CLOCK", available_quantity=100, eta=None)
+    ships_tomorrow = Batch(reference="shipment", sku="RETRO-CLOCK", available_quantity=100, eta=tomorrow)
+    order_line = OrderLine(sku="RETRO-CLOCK", quantity=10)
 
     allocate(order_line, [warehouse_batch, ships_tomorrow])
 
@@ -73,10 +73,10 @@ def test_prefers_warehouse_batches_to_shipments():
 
 
 def test_prefers_earlier_batches():
-    earliest = Batch(reference="batch1", stock_keeping_unit="MINIMALIST-SPOON", available_quantity=50, eta=today)
-    medium = Batch(reference="batch2", stock_keeping_unit="MINIMALIST-SPOON", available_quantity=50, eta=tomorrow)
-    latest = Batch(reference="batch3", stock_keeping_unit="MINIMALIST-SPOON", available_quantity=50, eta=later)
-    order_line = OrderLine(stock_keeping_unit="MINIMALIST-SPOON", quantity=10)
+    earliest = Batch(reference="batch1", sku="MINIMALIST-SPOON", available_quantity=50, eta=today)
+    medium = Batch(reference="batch2", sku="MINIMALIST-SPOON", available_quantity=50, eta=tomorrow)
+    latest = Batch(reference="batch3", sku="MINIMALIST-SPOON", available_quantity=50, eta=later)
+    order_line = OrderLine(sku="MINIMALIST-SPOON", quantity=10)
 
     allocate(order_line, [medium, latest, earliest])
 
@@ -87,11 +87,11 @@ def test_prefers_earlier_batches():
 
 
 def test_skips_out_of_stock_batches():
-    warehouse_batch = Batch(reference="warehouse", stock_keeping_unit="FANCY-CHAIR", available_quantity=1, eta=None)
-    earliest = Batch(reference="shipment1", stock_keeping_unit="FANCY-CHAIR", available_quantity=2, eta=today)
-    medium = Batch(reference="shipment2", stock_keeping_unit="FANCY-CHAIR", available_quantity=3, eta=tomorrow)
-    latest = Batch(reference="shipment3", stock_keeping_unit="FANCY-CHAIR", available_quantity=50, eta=later)
-    order_line = OrderLine(stock_keeping_unit="FANCY-CHAIR", quantity=10)
+    warehouse_batch = Batch(reference="warehouse", sku="FANCY-CHAIR", available_quantity=1, eta=None)
+    earliest = Batch(reference="shipment1", sku="FANCY-CHAIR", available_quantity=2, eta=today)
+    medium = Batch(reference="shipment2", sku="FANCY-CHAIR", available_quantity=3, eta=tomorrow)
+    latest = Batch(reference="shipment3", sku="FANCY-CHAIR", available_quantity=50, eta=later)
+    order_line = OrderLine(sku="FANCY-CHAIR", quantity=10)
 
     allocate(order_line, [medium, latest, earliest, warehouse_batch])
 
@@ -103,9 +103,9 @@ def test_skips_out_of_stock_batches():
 
 
 def test_raises_exception_if_cannot_allocate():
-    first = Batch(reference="shipment1", stock_keeping_unit="ART-DECO-VASE", available_quantity=2, eta=today)
-    second = Batch(reference="shipment2", stock_keeping_unit="ART-DECO-VASE", available_quantity=3, eta=tomorrow)
-    order_line = OrderLine(stock_keeping_unit="ART-DECO-VASE", quantity=10)
+    first = Batch(reference="shipment1", sku="ART-DECO-VASE", available_quantity=2, eta=today)
+    second = Batch(reference="shipment2", sku="ART-DECO-VASE", available_quantity=3, eta=tomorrow)
+    order_line = OrderLine(sku="ART-DECO-VASE", quantity=10)
 
     with pytest.raises(AllocationError):
         allocate(order_line, [second, first])
